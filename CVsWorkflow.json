@@ -1,0 +1,437 @@
+{
+  "name": "CVs",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "apply-job",
+        "options": {
+          "allowedOrigins": "*",
+          "ipWhitelist": "",
+          "rawBody": true,
+          "responseData": "success"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -2656,
+        144
+      ],
+      "id": "d2926698-b6ce-4ddd-ac0f-4fd8940bd448",
+      "name": "Webhook",
+      "webhookId": "24b583c0-c5c3-4c8b-9b3b-ef8942459558"
+    },
+    {
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "body.cv",
+        "binaryPropertyName": "cv",
+        "options": {
+          "fileName": "cv",
+          "mimeType": "application/pdf"
+        }
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        -2160,
+        144
+      ],
+      "id": "c5b4f511-b401-49e4-8990-4cfca5a86e80",
+      "name": "Convert to File"
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "binaryPropertyName": "cv",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        -1936,
+        144
+      ],
+      "id": "09eba144-27cb-4487-9bea-b73c302ba651",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "dd7b3394-69ba-422f-a046-d74b66704d56",
+              "name": "body",
+              "value": "={{ $json[\"body\"] }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -2416,
+        144
+      ],
+      "id": "88a153ab-6ef0-4b58-9dee-9e1a2ce6911f",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Job Description (JD) => {\n\n  {{ $('Edit Fields1').item.json.body.job_description.toJsonString() }}\n\n}\n\nCandidate CV => {\n\n  {{ $json.cv_text.toJsonString() }}\n\n}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are a helpful assistant\nYou are an expert recruitment evaluator. You will receive two text inputs:\n\nJob Description (JD)\n\nCandidate CV\n\nCarefully compare the CV against the JD, evaluating the following:\n\nEducation requirements\n\nSkills (both technical and soft)\n\nRelevant experience (industry, role, responsibilities)\n\nCertifications or achievements that add value\n\nUse these criteria to compute a fit score from 0 to 100, where:\n\n90–100 = Perfect or near-perfect match\n\n70–89 = Good match with some minor gaps\n\n50–69 = Partial match; missing key elements\n\nBelow 50 = Weak fit or not suitable\n\nReturn only the final numeric score — no explanation or comments."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.9,
+      "position": [
+        -1504,
+        144
+      ],
+      "id": "615d5ac9-4667-4527-8bd0-4059922ae29c",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1e322a8b-bc0f-4e7a-95b1-9843b473a11c",
+              "name": "cv_text",
+              "value": "={{ $json.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1712,
+        144
+      ],
+      "id": "37d3841c-32d7-4826-90bc-79d4701d76b4",
+      "name": "cv text"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n\t\"score\": \"0-100\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        -1312,
+        352
+      ],
+      "id": "25d582f0-c934-4df2-9b7c-7bdcc2e9f7bf",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -1520,
+        368
+      ],
+      "id": "1f6685cf-b502-428d-bcaa-9ebf99d89aeb",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "5WTv38fFKuEOFFis",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "33bc28cb-e3fa-4435-8d9e-de9d47d46877",
+              "leftValue": "={{ $json.output.score.toNumber() }}",
+              "rightValue": 70,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1088,
+        144
+      ],
+      "id": "8b8bb74a-7341-4481-b8ea-2e3836fc76a2",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "appX4SqW1TOHklBL9",
+          "mode": "list",
+          "cachedResultName": "CV Tracker",
+          "cachedResultUrl": "https://airtable.com/appX4SqW1TOHklBL9"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblgVWC320RLh3Lej",
+          "mode": "list",
+          "cachedResultName": "cv",
+          "cachedResultUrl": "https://airtable.com/appX4SqW1TOHklBL9/tblgVWC320RLh3Lej"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "name": "={{ $('Edit Fields1').item.json.body.full_name }}",
+            "email": "={{ $('Edit Fields1').item.json.body.email }}",
+            "label": "={{ $('Edit Fields1').item.json.body.job_description.title }}",
+            "score": "={{ $json.output.score }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "score",
+              "displayName": "score",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "label",
+              "displayName": "label",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        -832,
+        -176
+      ],
+      "id": "831f1789-e9a4-4ebe-85a1-01efb52f5724",
+      "name": "Create a record",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "HMMSHJ9FwYzOfSyQ",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Edit Fields1').item.json.body.email }}",
+        "subject": "=You're Shortlisted for the Next Step – {{ $('Edit Fields1').item.json.body.job_description.title }} at OCloud Solutions",
+        "emailType": "text",
+        "message": "=Dear {{ $('Edit Fields1').item.json.body.full_name }} ,\n\nThank you for applying for the position of {{ $('Edit Fields1').item.json.body.job_description.title }} at\nOCloud Solutions. We have reviewed your application and are pleased to\ninform you that you have been shortlisted for the next stage of our\nselection process.\n\nWe were impressed by your background and believe your skills could be\na great fit for our team.\n\nPlease schedule an interview slot here: https://calendar.app.google/EZjFRzKgN8Z8L3pX8\n\nIf you have any questions in the meantime, feel free to reach out.\nLooking forward to speaking with you soon.\n\nRegards\nOCloud Solutions\n",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        -832,
+        32
+      ],
+      "id": "33955ba5-9f06-4207-80d6-fecd50500783",
+      "name": "Send a message",
+      "webhookId": "4f940c8d-92ca-4ce1-a255-d2f38eaaa708",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "31aiGvUipzJrUcPr",
+          "name": "Gmail account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Convert to File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "cv text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "cv text": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Create a record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "fe296b77-8225-4716-a5d5-d5f54bafb370",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "dc389ee1b9f05cb3795a2d1972b77e921b7fa5b203338a4bdcc94b4d0a7fe37b"
+  },
+  "id": "S9COaLoLUvsxhgMT",
+  "tags": []
+}
